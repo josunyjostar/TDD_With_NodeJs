@@ -1,15 +1,12 @@
-let users = [
-  {id: 1, name: 'alice'},
-  {id: 2, name: 'bek'},
-  {id: 3, name: 'chris'},
-];
+import {User} from '../../models.js';
 
 export const index = (req, res) => {
   req.query.limit = req.query.limit || 10;
   const limit = Number(req.query.limit);
   if (isNaN(limit)) res.status(400).end();
 
-  res.json(users.slice(0, limit));
+  User.findAll({}).then(users => res.json(users.slice(0, limit)));
+  // res.json(users.slice(0, limit));
 };
 
 export const getUserById = (req, res) => {
