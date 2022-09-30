@@ -5,62 +5,59 @@ export const index = (req, res) => {
   const limit = Number(req.query.limit);
   if (isNaN(limit)) res.status(400).end();
 
-  User.findAll({}).then(users => res.json(users.slice(0, limit)));
-  // res.json(users.slice(0, limit));
+  User.findAll({limit}).then(users => res.json(users));
 };
 
-export const getUserById = (req, res) => {
+export const getUserById = async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).end();
 
-  const user = users.filter(user => user.id === id)[0];
+  const user = await User.findOne({where: {id}});
   if (!user) return res.status(404).end();
 
   res.json(user);
 };
 
-export const deleteUserById = (req, res) => {
+export const deleteUserById = async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).end();
 
-  const user = users.filter(user => user.id !== id).length;
+  const user = await User.destroy({where: {id}});
   if (!user) return res.status(404).end();
   res.status(204).end();
 };
 
-export const createUser = (req, res) => {
+export const createUser = async (req, res) => {
   const name = req.body.name;
   if (!name) return res.status(400).end();
+  let user = {};
+  try {
+    user = await User.create({name});
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') return res.status(409).end(err);
+    else return res.status(500).end(err);
+  }
 
-  const isConflict = users.filter(user => user.name === name).length;
-  if (isConflict) return res.status(409).end();
-
-  const id = users[users.length - 1].id + 1;
-  const user = {
-    id,
-    name,
-  };
-  users.push(user);
   res.status(201).json(user);
 };
 
-export const modifyUser = (req, res) => {
+export const modifyUser = async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).end();
 
   const name = req.body.name;
   if (!name) return res.status(400).end();
 
-  const user = users.filter(user => {
-    return user.id === id;
-  })[0];
+  const user = await User.findOne({where: {id}});
   if (!user) return res.status(404).end();
-
-  const findName = users.filter(user => {
-    return user.name === name;
-  })[0];
-  if (findName) return res.status(409).end();
-
   user.name = name;
+
+  try {
+    await user.save();
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') return res.status(409).end(err);
+    else return res.status(500).end(err);
+  }
+
   res.json(user);
 };
